@@ -1,0 +1,67 @@
+name: Spring Boot CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD:
+          MYSQL_DATABASE: find_houses
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+
+    steps:
+      # Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Setup JDK
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Cache Maven dependencies
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # Build project
+      - name: Build project
+        run: mvn clean install -DskipTests=false
+
+      # Run unit tests
+      - name: Run Unit Tests
+        run: mvn test
+
+      # Run API tests
+      - name: Run API Tests
+        run: mvn test -Dtest=com.backend.api.*
+
+      # Run Selenium UI tests (headless)
+      - name: Run Selenium UI Tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          Xvfb :99 -screen 0 1920x1080x24 &
+          export DISPLAY=:99
+          mvn test -Dtest=com.backend.selenium.*
