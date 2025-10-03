@@ -47,13 +47,3 @@ jobs:
 
       - name: Run tests
         run: mvn test
-
-        # 🔹 NEW STEP: Run SonarQube analysis
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        with:
-          args: >
-            -Dsonar.projectKey=YOUR_PROJECT_KEY
-            -Dsonar.organization=YOUR_ORG_NAME
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
